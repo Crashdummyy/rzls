@@ -1,5 +1,7 @@
 name: Crawl new Releases
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
   schedule:
     - cron: "2 2 * * *"
