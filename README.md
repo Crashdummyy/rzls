@@ -1,0 +1,81 @@
+# RoslynCrawler
+
+This repository will crawl the [msft_consumption feed](https://dev.azure.com/azure-public/vside/_artifacts/feed/msft_consumption/NuGet/rzls.linux-x64/overview)
+for new releases of the rzls to be used with [rzls.nvim](https://github.com/tris203/rzls.nvim)
+and uploads the as artifacts as github releases
+
+## AutoUpdate for nvim
+
+### Mason (TBD)
+
+I'll try to get this into at least [Syndims mason-registry](https://github.com/Syndim/mason-registry) in the future.  
+For now please use the manual approach
+
+```lua
+require('mason').setup({
+        registries = {
+            'github:mason-org/mason-registry',
+            'github:syndim/mason-registry'
+        },
+    })
+```
+
+Until this is done you can use this script to automatically update to the latest version:
+
+### Linux
+
+The variable `rid` might need to be altered
+
+```bash
+#!/bin/bash
+
+if ! command -v unzip &> /dev/null
+then
+    echo "unzip is required. Please install it"
+    exit 1
+fi
+
+rid="linux-x64"
+targetDir="$HOME/.local/share/nvim/rzls"
+latestVersion=$(curl -s https://api.github.com/repos/Crashdummyy/rzls/releases | grep tag_name | head -1 | cut -d '"' -f4)
+
+[[ -z "$latestVersion" ]] && echo "Failed to fetch the latest package information." && exit 1
+
+echo "Latest version: $latestVersion"
+
+asset=$(curl -s https://api.github.com/repos/Crashdummyy/rzls/releases | grep "releases/download/$latestVersion" | grep "$rid"| cut -d '"' -f 4)
+
+echo "Downloading: $asset"
+
+curl -Lo "./rzls.zip" "$asset"
+
+echo "Remove old installation"
+rm -rf $targetDir/*
+
+unzip "./rzls.zip" -d "$targetDir/"
+rm "./rzls.zip"
+```
+
+### Macos
+
+TBD
+
+### Windows
+
+#### x64
+
+```powershell
+$file = New-Guid
+Invoke-WebRequest https://github.com/Crashdummyy/rzls/releases/latest/download/rzls.win-x64.zip -OutFile ~/Downloads/$file.zip
+Expand-Archive ~/Downloads/$file.zip -DestinationPath ~/AppData/Local/nvim-data/rzls/ -Force
+rm ~/Downloads/$file.zip
+```
+
+#### arm64
+
+```powershell
+$file = New-Guid
+Invoke-WebRequest https://github.com/Crashdummyy/rzls/releases/latest/download/rzls.win-arm64.zip -OutFile ~/Downloads/$file.zip
+Expand-Archive ~/Downloads/$file.zip -DestinationPath ~/AppData/Local/nvim-data/rzls/ -Force
+rm ~/Downloads/$file.zip
+```

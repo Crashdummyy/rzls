@@ -1,0 +1,78 @@
+name: Crawl new Releases
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "2 2 * * *"
+
+jobs:
+  checkIfRequired:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.latestVersion }}
+      shouldRun: ${{ steps.shouldrun.outputs.shouldRun }}
+    steps:
+      - name: Get the latest version
+        id: version
+        run: |
+          packageId=577084ea-e5be-4fad-951b-00d0b05fb170
+          apiUrl="https://feeds.dev.azure.com/azure-public/vside/_apis/packaging/Feeds/msft_consumption/packages/$packageId?api-version=7.2-preview.1"
+
+          latestVersion=$(curl -s $apiUrl | jq -r '.versions[0].version')
+
+          echo "Detected rzls version $latestVersion"
+          echo "latestVersion=$latestVersion" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether I must crawl at all
+        id: shouldrun
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latestVersion=$(gh release view --repo ${{ github.repository }} --json name | jq .name)
+          latest="${latestVersion:1:-1}"
+          echo "Current latest: $latest"
+          if [[ "$latest" == "${{ steps.version.outputs.latestVersion }}" ]];then
+              echo "We're already at the latest version. No need to download at all"
+              echo "shouldRun=false" >> "$GITHUB_OUTPUT"
+              exit 0
+          fi
+
+          echo "shouldRun=true" >> "$GITHUB_OUTPUT"
+
+      - name: Draft release
+        if: ${{ steps.shouldrun.outputs.shouldRun == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tagname="${{ steps.version.outputs.latestVersion }}"
+          gh release create "$tagname" -t "$tagname" --title="$tagname" --notes="Rosyln Release $tagname" --repo=${{ github.repository }}
+
+  downloadLanguageServers:
+    runs-on: ubuntu-latest
+    needs: [checkIfRequired]
+    if: ${{ needs.checkIfRequired.outputs.shouldRun == 'true' }}
+    strategy:
+      matrix:
+        rid: [ linux-x64, linux-arm64, win-x64, win-arm64, osx-x64, osx-arm64 ]
+
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v4
+
+      - name: Prepare the csproj
+        run: |
+          sed -i 's|#{rid}|${{ matrix.rid }}|' ./Server.csproj
+          sed -i 's|#{rzlsVersion}|${{ needs.checkIfRequired.outputs.version }}|' ./Server.csproj
+          cat "./Server.csproj"
+
+      - name: Download and zip the Release
+        run: |
+          dotnet nuget add source -n rzls "https://pkgs.dev.azure.com/azure-public/vside/_packaging/msft_consumption/nuget/v3/index.json"
+          dotnet restore "./Server.csproj"
+          cd "./out/rzls.${{ matrix.rid }}/${{ needs.checkIfRequired.outputs.version }}/content/LanguageServer/${{ matrix.rid }}"
+          zip -r "../../../../../../rzls.${{ matrix.rid }}.zip" .
+
+      - name: Upload Assets To Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ needs.checkIfRequired.outputs.version }}" "./rzls.${{ matrix.rid }}.zip"

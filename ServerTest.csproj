@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.Build.NoTargets/1.0.80">
+    <PropertyGroup>
+        <RestorePackagesPath>out</RestorePackagesPath>
+        <TargetFramework>net8.0</TargetFramework>
+        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+        <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageDownload Include="rzls.linux-x64" version="[9.0.0-preview.24528.3]" />
+    </ItemGroup>
+</Project>
