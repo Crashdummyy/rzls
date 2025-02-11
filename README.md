@@ -1,28 +1,52 @@
-# RoslynCrawler
+# rzls Crawler
 
 This repository will crawl the [msft_consumption feed](https://dev.azure.com/azure-public/vside/_artifacts/feed/msft_consumption/NuGet/rzls.linux-x64/overview)
 for new releases of the rzls to be used with [rzls.nvim](https://github.com/tris203/rzls.nvim)
-and uploads the as artifacts as github releases
+and uploads them as artifacts as github releases
 
 ## AutoUpdate for nvim
 
-### Mason (TBD)
+### Mason
 
-I'll try to get this into at least [Syndims mason-registry](https://github.com/Syndim/mason-registry) in the future.  
-For now please use the manual approach
+In case you're already using [mason](https://github.com/williamboman/mason.nvim) you can add a custom registry.
+
+```lua
+  {
+    "williamboman/mason.nvim",
+    cmd = {
+      "Mason",
+      "MasonInstall",
+      "MasonUninstall",
+      "MasonUninstallAll",
+      "MasonLog",
+      "MasonUpdate",
+    },
+    opts = {
+      registries = {
+        "github:mason-org/mason-registry",
+        "github:crashdummyy/mason-registry"
+      }
+    }
+  },
+
+```
+
+or  
 
 ```lua
 require('mason').setup({
         registries = {
             'github:mason-org/mason-registry',
-            'github:syndim/mason-registry'
+            'github:crashdummyy/mason-registry'
         },
     })
 ```
 
-Until this is done you can use this script to automatically update to the latest version:
+This registry currently serves at least the languageServer for [roslyn.nvim](https://github.com/seblj/roslyn.nvim) and [rzls.nvim](https://github.com/tris203/rzls.nvim)
 
-### Linux
+This registry currently serves at least the languageServer for [roslyn.nvim](https://github.com/seblj/roslyn.nvim) and [rzls.nvim](https://github.com/tris203/rzls.nvim)
+
+### Linux ( manual )
 
 The variable `rid` might need to be altered
 
@@ -60,7 +84,7 @@ rm "./rzls.zip"
 
 TBD
 
-### Windows
+### Windows ( manual )
 
 #### x64
 
